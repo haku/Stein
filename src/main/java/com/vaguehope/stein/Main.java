@@ -6,11 +6,15 @@ import org.apache.sshd.SshServer;
 import org.apache.sshd.server.PasswordAuthenticator;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class Main {
 
 	private static final int SSHD_PORT = 14022;
 	private static final String HOSTKEY_NAME = "hostkey.ser";
+
+	private static final Logger LOG = LoggerFactory.getLogger(DesuCommand.class);
 
 	public static void main (String[] args) throws Exception {
 		SshServer sshd = SshServer.setUpDefaultServer();
@@ -25,6 +29,7 @@ public class Main {
 		sshd.setShellFactory(new DesuCommandFactory());
 		sshd.start();
 
+		LOG.info("Server ready on port {}.", String.valueOf(SSHD_PORT));
 		new CountDownLatch(1).await();
 	}
 
