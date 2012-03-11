@@ -1,4 +1,4 @@
-package lanternademo;
+package com.vaguehope.stein;
 
 import org.apache.sshd.common.Factory;
 import org.apache.sshd.server.Command;

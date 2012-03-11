@@ -1,4 +1,4 @@
-package lanternademo;
+package com.vaguehope.stein;
 
 import java.util.concurrent.CountDownLatch;
 
