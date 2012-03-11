@@ -4,6 +4,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.SshServer;
 import org.apache.sshd.server.PasswordAuthenticator;
+import org.apache.sshd.server.ServerFactoryManager;
 import org.apache.sshd.server.keyprovider.SimpleGeneratorHostKeyProvider;
 import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
@@ -13,6 +14,7 @@ public class Main {
 
 	private static final int SSHD_PORT = 14022;
 	private static final String HOSTKEY_NAME = "hostkey.ser";
+	private static final long IDLE_TIMEOUT = 24 * 60 * 1000L; // A day.
 
 	private static final Logger LOG = LoggerFactory.getLogger(DesuCommand.class);
 
@@ -27,6 +29,7 @@ public class Main {
 			}
 		});
 		sshd.setShellFactory(new DesuCommandFactory());
+		sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, String.valueOf(IDLE_TIMEOUT));
 		sshd.start();
 
 		LOG.info("Server ready on port {}.", String.valueOf(SSHD_PORT));
