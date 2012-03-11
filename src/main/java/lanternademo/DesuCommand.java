@@ -81,6 +81,10 @@ public class DesuCommand implements Command, SessionAware, Runnable {
 
 		this.writer = new ScreenWriter(this.lterm.getScreen());
 
+		/* 1 thread per client could become a scaling issue.
+		 * Given it will spend most of its time sleeping,
+		 * it could be redesigned to use a shared pool of threads.
+		 */
 		this.thread = new Thread(this, "DesuCommand"); // TODO better name.
 		this.thread.start();
 	}
