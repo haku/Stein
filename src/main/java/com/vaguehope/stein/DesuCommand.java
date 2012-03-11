@@ -76,7 +76,7 @@ public class DesuCommand implements Command, SessionAware, Runnable {
 			this.lterm.start();
 		}
 		catch (LanternException e) {
-			throw new RuntimeException(e);
+			throw new IOException("Failed to start Lanterna session.", e);
 		}
 
 		this.writer = new ScreenWriter(this.lterm.getScreen());
@@ -133,10 +133,10 @@ public class DesuCommand implements Command, SessionAware, Runnable {
 		if (this.lterm == null) return;
 		Screen screen = this.lterm.getScreen();
 		try {
-			this.writer.drawString(0, 0, "" + (System.currentTimeMillis() / 1000L));
+			this.writer.drawString(0, 0, "" + (System.currentTimeMillis() / 1000L)); // NOSONAR not a magic number.
 			this.writer.drawString(1, 2, "Hello desu~", Terminal.Style.Bold);
-			this.writer.drawString(1, 3, "env: " + this.environment.getEnv());
-			this.writer.drawString(1, 4, "debug: " + this.inputCounter.get());
+			this.writer.drawString(1, 3, "env: " + this.environment.getEnv()); // NOSONAR not a magic number.
+			this.writer.drawString(1, 4, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
 			screen.refresh();
 		}
 		catch (LanternException e) {

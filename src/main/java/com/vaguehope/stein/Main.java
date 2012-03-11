@@ -1,5 +1,6 @@
 package com.vaguehope.stein;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
 import org.apache.sshd.SshServer;
@@ -10,7 +11,7 @@ import org.apache.sshd.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class Main {
+public final class Main {
 
 	private static final int SSHD_PORT = 14022;
 	private static final String HOSTKEY_NAME = "hostkey.ser";
@@ -18,7 +19,9 @@ public class Main {
 
 	private static final Logger LOG = LoggerFactory.getLogger(DesuCommand.class);
 
-	public static void main (String[] args) throws Exception {
+	private Main () {}
+
+	public static void main (String[] args) throws IOException, InterruptedException {
 		SshServer sshd = SshServer.setUpDefaultServer();
 		sshd.setPort(SSHD_PORT);
 		sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(HOSTKEY_NAME));
