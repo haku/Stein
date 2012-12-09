@@ -1,6 +1,5 @@
 package com.vaguehope.stein;
 
-import java.io.FilterOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -13,16 +12,16 @@ import org.apache.sshd.server.Environment;
 import org.apache.sshd.server.ExitCallback;
 import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.session.ServerSession;
-import org.lantern.LanternException;
-import org.lantern.LanternTerminal;
-import org.lantern.TerminalFactory;
-import org.lantern.input.Key;
-import org.lantern.input.Key.Kind;
-import org.lantern.screen.Screen;
-import org.lantern.screen.ScreenWriter;
-import org.lantern.terminal.Terminal;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.googlecode.lanterna.TerminalFacade;
+import com.googlecode.lanterna.input.Key;
+import com.googlecode.lanterna.input.Key.Kind;
+import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.ScreenCharacterStyle;
+import com.googlecode.lanterna.screen.ScreenWriter;
+import com.googlecode.lanterna.terminal.Terminal;
 
 public class DesuCommand implements Command, SessionAware, Runnable {
 
@@ -42,8 +41,9 @@ public class DesuCommand implements Command, SessionAware, Runnable {
 	private final AtomicBoolean alive = new AtomicBoolean(true);
 
 	private Environment environment;
-	private LanternTerminal lterm;
-	private ScreenWriter writer;
+	private Terminal terminal;
+	private Screen screen;
+	private ScreenWriter screenWriter;
 
 	private final AtomicInteger inputCounter = new AtomicInteger();
 
@@ -71,15 +71,12 @@ public class DesuCommand implements Command, SessionAware, Runnable {
 	@Override
 	public void start (Environment env) throws IOException {
 		this.environment = env;
-		try {
-			this.lterm = new LanternTerminal(new TerminalFactory.Common(), this.in, new FlushingOutputStream(this.out), Charset.forName("UTF8"));
-			this.lterm.start();
-		}
-		catch (LanternException e) {
-			throw new IOException("Failed to start Lanterna session.", e);
-		}
+		this.terminal = TerminalFacade.createTextTerminal(this.in, this.out, Charset.forName("UTF8"));
+		this.screen = TerminalFacade.createScreen(this.terminal);
+		this.screen.startScreen();
+		this.screen.setCursorPosition(null);
 
-		this.writer = new ScreenWriter(this.lterm.getScreen());
+		this.screenWriter = new ScreenWriter(this.screen);
 
 		/*
 		 * 1 thread per client could become a scaling issue. Given it will spend
@@ -110,54 +107,44 @@ public class DesuCommand implements Command, SessionAware, Runnable {
 
 	private boolean readInput () {
 		boolean changed = false;
-		try {
-			Key k;
-			while ((k = this.lterm.getUnderlyingTerminal().readInput()) != null) {
-				if (k.getKind() == Kind.NormalKey) {
-					if (k.getCharacter() == 'q') {
-						quit();
-						return false; // We are quitting.  Do not try and update UI.
-					}
-					this.inputCounter.incrementAndGet();
-					changed = true;
+		Key k;
+		while ((k = this.terminal.readInput()) != null) {
+			if (k.getKind() == Kind.NormalKey) {
+				if (k.getCharacter() == 'q') {
+					quit();
+					return false; // We are quitting.  Do not try and update UI.
 				}
+				this.inputCounter.incrementAndGet();
+				changed = true;
 			}
-		}
-		catch (LanternException e) {
-			LOG.warn("Failed to read terminal input.", e);
 		}
 		return changed;
 	}
 
 	private void printScreen () {
-		if (this.lterm == null) return;
-		Screen screen = this.lterm.getScreen();
-		try {
-			this.writer.drawString(0, 0, "" + (System.currentTimeMillis() / 1000L)); // NOSONAR not a magic number.
-			this.writer.drawString(1, 2, "Hello desu~", Terminal.Style.Bold);
-			this.writer.drawString(1, 3, "env: " + this.environment.getEnv()); // NOSONAR not a magic number.
-			this.writer.drawString(1, 4, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
-			screen.refresh();
+		if (this.terminal == null) return;
+		if (this.screen.resizePending()) {
+			this.screenWriter.fillScreen(' ');
+			this.screen.refresh();
 		}
-		catch (LanternException e) {
-			LOG.warn("Failed to write to terminal.", e);
-		}
+		this.screen.clear();
+		this.screenWriter.drawString(0, 0, "" + (System.currentTimeMillis() / 1000L)); // NOSONAR not a magic number.
+		this.screenWriter.drawString(1, 2, "Hello desu~", ScreenCharacterStyle.Bold);
+		this.screenWriter.drawString(1, 3, "env: " + this.environment.getEnv()); // NOSONAR not a magic number.
+		this.screenWriter.drawString(1, 4, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
+		this.screen.refresh();
 	}
 
 	/**
-	 * Terminate Lanterna wrapper and discard instance.
-	 * Schedule thread for shutdown.
-	 * Must be called on this console's thread.
+	 * Terminate Lanterna wrapper and discard instance. Schedule thread for
+	 * shutdown. Must be called on this console's thread.
 	 */
 	private void quit () {
 		if (Thread.currentThread().getId() != this.thread.getId()) throw new IllegalStateException("quit() called on incorrect thread.");
-		try {
-			this.lterm.stopAndRestoreTerminal();
-			this.lterm = null;
-		}
-		catch (LanternException e) {
-			LOG.warn("Failed to cleanly detach Lanterna terminal.", e);
-		}
+		this.screenWriter = null;
+		this.screen.stopScreen();
+		this.screen = null;
+		this.terminal = null;
 		this.alive.set(false);
 		this.callback.onExit(0);
 	}
@@ -171,20 +158,6 @@ public class DesuCommand implements Command, SessionAware, Runnable {
 			}
 		}
 		catch (InterruptedException e) {/* Do not care. */}
-	}
-
-	private static class FlushingOutputStream extends FilterOutputStream {
-
-		public FlushingOutputStream (OutputStream out) {
-			super(out);
-		}
-
-		@Override
-		public void write (int b) throws IOException {
-			super.write(b);
-			flush();
-		}
-
 	}
 
 }
