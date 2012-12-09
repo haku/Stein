@@ -17,7 +17,7 @@ public final class Main {
 	private static final String HOSTKEY_NAME = "hostkey.ser";
 	private static final long IDLE_TIMEOUT = 24 * 60 * 60 * 1000L; // A day.
 
-	private static final Logger LOG = LoggerFactory.getLogger(DesuCommand.class);
+	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
 	private Main () {}
 
