@@ -1,5 +1,9 @@
 package com.vaguehope.stein;
 
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -16,27 +20,32 @@ import com.googlecode.lanterna.screen.ScreenCharacterStyle;
 import com.googlecode.lanterna.screen.ScreenWriter;
 import com.googlecode.lanterna.terminal.Terminal;
 
-public class DesuTerm extends Thread {
+public class DesuTerm implements Runnable {
 
 	private static final long POLL_CYCLE = 200L;
 	private static final long PRINT_CYCLE = 1000L;
 	private static final long SHUTDOWN_TIMEOUT = 5000L;
 
 	private static final Logger LOG = LoggerFactory.getLogger(DesuTerm.class);
-	private static final AtomicInteger SESSION_COUNTER = new AtomicInteger();
 
+	private final String name;
 	private final Environment env;
 	private final Terminal terminal;
 	private final ExitCallback callback;
 
 	private final Screen screen;
 	private final ScreenWriter screenWriter;
+
 	private final AtomicBoolean up = new AtomicBoolean(true);
+	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
+	private ScheduledFuture<?> schFuture;
+	private boolean inited = false;
+	private long lastPrint = 0L;
+
 	private final AtomicInteger inputCounter = new AtomicInteger();
 
-	public DesuTerm (Environment env, Terminal terminal, ExitCallback callback) {
-		super("DesuTerm" + SESSION_COUNTER.incrementAndGet());
-		this.setDaemon(true);
+	public DesuTerm (String name, Environment env, Terminal terminal, ExitCallback callback) {
+		this.name = name;
 		this.env = env;
 		this.terminal = terminal;
 		this.callback = callback;
@@ -44,10 +53,20 @@ public class DesuTerm extends Thread {
 		this.screenWriter = new ScreenWriter(this.screen);
 	}
 
+	public void schedule (ScheduledExecutorService schEx) {
+		this.schFuture = schEx.scheduleWithFixedDelay(this, 0L, POLL_CYCLE, TimeUnit.MILLISECONDS);
+	}
+
+	public void init () {
+		this.screen.startScreen();
+		this.inited = true;
+		LOG.info("Session created: {}", this.name);
+	}
+
 	public void stopAndJoin () {
 		if (this.up.compareAndSet(true, false)) {
-			LOG.info("Killing session...");
-			joinQuietly(SHUTDOWN_TIMEOUT);
+			LOG.info("Killing session {}...", this.name);
+			Quietly.await(this.shutdownLatch, SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS);
 		}
 	}
 
@@ -57,21 +76,22 @@ public class DesuTerm extends Thread {
 
 	@Override
 	public void run () {
-		LOG.info("Session created.");
-		this.screen.startScreen();
-		long lastPrint = 0L;
-		while (this.up.get()) {
+		if (!this.inited) init();
+		if (this.up.get()) {
 			boolean changed = readInput();
-			if (changed || System.currentTimeMillis() - lastPrint > PRINT_CYCLE) {
+			if (changed || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
 				printScreen();
-				lastPrint = System.currentTimeMillis();
+				this.lastPrint = System.currentTimeMillis();
 			}
-			sleepQuietly(POLL_CYCLE); // TODO measure how long cycle took and sleep remaining.
 		}
-		this.screen.stopScreen();
-		this.terminal.flush(); // Workaround as stopScreen() does not trigger flush().
-		this.callback.onExit(0);
-		LOG.info("Session destroyed.");
+		else {
+			this.schFuture.cancel(false);
+			this.screen.stopScreen();
+			this.terminal.flush(); // Workaround as stopScreen() does not trigger flush().
+			this.callback.onExit(0);
+			LOG.info("Session destroyed: {}", this.name);
+			this.shutdownLatch.countDown();
+		}
 	}
 
 	private boolean readInput () {
@@ -102,20 +122,6 @@ public class DesuTerm extends Thread {
 		this.screenWriter.drawString(1, 3, "env: " + this.env.getEnv()); // NOSONAR not a magic number.
 		this.screenWriter.drawString(1, 4, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
 		this.screen.refresh();
-	}
-
-	private void joinQuietly (long timeoutInMilliseconds) {
-		try {
-			this.join(timeoutInMilliseconds);
-		}
-		catch (InterruptedException e) {/* Do not care. */}
-	}
-
-	private static void sleepQuietly (long time) {
-		try {
-			Thread.sleep(time);
-		}
-		catch (InterruptedException e) {/* Do not care. */}
 	}
 
 }

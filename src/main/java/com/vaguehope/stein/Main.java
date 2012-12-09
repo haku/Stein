@@ -27,18 +27,24 @@ public final class Main {
 		SshServer sshd = SshServer.setUpDefaultServer();
 		sshd.setPort(SSHD_PORT);
 		sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(HOSTKEY_NAME));
-		sshd.setPasswordAuthenticator(new PasswordAuthenticator() {
-			@Override
-			public boolean authenticate (String username, String password, ServerSession session) {
-				return username != null && username.equals(password); // FIXME dodge test auth.
-			}
-		});
-		sshd.setShellFactory(new DesuCommandFactory());
+		sshd.setPasswordAuthenticator(new TestPasswordAuthenticator());
+		sshd.setShellFactory(new ConsoleCommandFactory());
 		sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, String.valueOf(IDLE_TIMEOUT));
 		sshd.start();
 
 		LOG.info("Server ready on port {}.", Integer.valueOf(sshd.getPort()));
 		new CountDownLatch(1).await();
+	}
+
+	private static final class TestPasswordAuthenticator implements PasswordAuthenticator {
+
+		public TestPasswordAuthenticator () {}
+
+		@Override
+		public boolean authenticate (String username, String password, ServerSession session) {
+			return username != null && username.equals(password); // FIXME dodge test auth.
+		}
+
 	}
 
 }
