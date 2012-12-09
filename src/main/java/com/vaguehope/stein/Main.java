@@ -13,13 +13,15 @@ import org.slf4j.LoggerFactory;
 
 public final class Main {
 
-	private static final int SSHD_PORT = 14022;
+	private static final int SSHD_PORT = 14022; // TODO make config.
 	private static final String HOSTKEY_NAME = "hostkey.ser";
 	private static final long IDLE_TIMEOUT = 24 * 60 * 60 * 1000L; // A day.
 
 	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
 
-	private Main () {}
+	private Main () {
+		throw new AssertionError();
+	}
 
 	public static void main (String[] args) throws IOException, InterruptedException {
 		SshServer sshd = SshServer.setUpDefaultServer();
@@ -35,7 +37,7 @@ public final class Main {
 		sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, String.valueOf(IDLE_TIMEOUT));
 		sshd.start();
 
-		LOG.info("Server ready on port {}.", String.valueOf(SSHD_PORT));
+		LOG.info("Server ready on port {}.", Integer.valueOf(sshd.getPort()));
 		new CountDownLatch(1).await();
 	}
 
