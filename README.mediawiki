@@ -1,10 +1,4 @@
 == Stein ==
 
-Example of a full-screen terminal UI served from Apache Mina sshd.
-
-=== Building ===
-
-You may need to run <code>fetch.sh</code> before running a Maven build.
-This is because the Lanterna library is not available as a Maven dependency.
-The supplied script will fetch it and install it in your local repository.
-Lanterna home page: [https://lanterna.googlecode.com].
+Example of a full-screen terminal UI served from Apache Mina sshd
+and rendered using Lanterna (https://lanterna.googlecode.com).
