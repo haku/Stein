@@ -26,7 +26,7 @@ public class ConsoleCommand implements Command, SessionAware {
 	private OutputStream out;
 	private ExitCallback callback;
 
-	private DesuTerm term;
+	private volatile DesuTerm term = null;
 
 	public ConsoleCommand (ScheduledExecutorService schEx) {
 		this.schEx = schEx;
@@ -62,6 +62,7 @@ public class ConsoleCommand implements Command, SessionAware {
 
 	@Override
 	public void destroy () {
+		if (this.term == null) throw new IllegalStateException();
 		this.term.stopAndJoin();
 	}
 
