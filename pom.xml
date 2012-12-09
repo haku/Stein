@@ -15,6 +15,10 @@
 		<slf4j.version>1.7.2</slf4j.version>
 	</properties>
 
+	<prerequisites>
+		<maven>2.2.1</maven>
+	</prerequisites>
+
 	<dependencies>
 
 		<!-- Main. -->
@@ -56,6 +60,21 @@
 				<configuration>
 					<source>${java.version}</source>
 					<target>${java.version}</target>
+				</configuration>
+			</plugin>
+
+			<plugin>
+				<artifactId>maven-assembly-plugin</artifactId>
+				<version>2.2</version>
+				<configuration>
+					<archive>
+						<manifest>
+							<mainClass>com.vaguehope.stein.Main</mainClass>
+						</manifest>
+					</archive>
+					<descriptorRefs>
+						<descriptorRef>jar-with-dependencies</descriptorRef>
+					</descriptorRefs>
 				</configuration>
 			</plugin>
 
