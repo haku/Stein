@@ -6,6 +6,13 @@
 	<version>1.0-SNAPSHOT</version>
 	<artifactId>stein</artifactId>
 
+	<properties>
+		<lanterna.version>2.1.1</lanterna.version>
+		<sshd.version>0.8.0</sshd.version>
+		<logback.version>1.0.9</logback.version>
+		<slf4j.version>1.7.2</slf4j.version>
+	</properties>
+
 	<dependencies>
 
 		<!-- Main. -->
@@ -13,13 +20,13 @@
 		<dependency>
 			<groupId>com.googlecode.lanterna</groupId>
 			<artifactId>lanterna</artifactId>
-			<version>2.1.1</version>
+			<version>${lanterna.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.apache.sshd</groupId>
 			<artifactId>sshd-core</artifactId>
-			<version>0.8.0</version>
+			<version>${sshd.version}</version>
 		</dependency>
 
 		<!-- Logging. -->
@@ -27,13 +34,13 @@
 		<dependency>
 			<groupId>ch.qos.logback</groupId>
 			<artifactId>logback-classic</artifactId>
-			<version>1.0.9</version>
+			<version>${logback.version}</version>
 		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
 			<artifactId>slf4j-api</artifactId>
-			<version>1.7.2</version>
+			<version>${slf4j.version}</version>
 		</dependency>
 
 	</dependencies>
