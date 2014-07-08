@@ -28,34 +28,34 @@ public class ConsoleCommand implements Command, SessionAware {
 
 	private volatile DesuTerm term = null;
 
-	public ConsoleCommand (ScheduledExecutorService schEx) {
+	public ConsoleCommand (final ScheduledExecutorService schEx) {
 		this.schEx = schEx;
 	}
 
 	@Override
-	public void setInputStream (InputStream in) {
+	public void setInputStream (final InputStream in) {
 		this.in = in;
 	}
 
 	@Override
-	public void setOutputStream (OutputStream out) {
+	public void setOutputStream (final OutputStream out) {
 		this.out = out;
 	}
 
 	@Override
-	public void setErrorStream (OutputStream err) {/* Unused. */}
+	public void setErrorStream (final OutputStream err) {/* Unused. */}
 
 	@Override
-	public void setExitCallback (ExitCallback callback) {
+	public void setExitCallback (final ExitCallback callback) {
 		this.callback = callback;
 	}
 
 	@Override
-	public void setSession (ServerSession session) {/* Unused. */}
+	public void setSession (final ServerSession session) {/* Unused. */}
 
 	@Override
-	public void start (Environment env) throws IOException {
-		Terminal terminal = TerminalFacade.createTextTerminal(this.in, this.out, Charset.forName("UTF8"));
+	public void start (final Environment env) throws IOException {
+		Terminal terminal = TerminalFacade.createUnixTerminal(this.in, this.out, Charset.forName("UTF8"));
 		this.term = new DesuTerm("desuTerm" + COUNTER.getAndIncrement(), env, terminal, this.callback);
 		this.term.schedule(this.schEx);
 	}
