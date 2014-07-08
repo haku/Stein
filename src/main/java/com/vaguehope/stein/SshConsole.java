@@ -70,14 +70,24 @@ public abstract class SshConsole implements Runnable {
 
 	private void init () {
 		if (!this.inited) {
+			this.inited = true; // Only try once.
 			this.screen.startScreen();
-			this.inited = true;
 			LOG.info("Session created: {}", this.name);
 		}
 	}
 
 	@Override
 	public void run () {
+		try {
+			tick();
+		}
+		catch (final Throwable t) {
+			LOG.error("Session error.", t);
+			scheduleQuit(); // Should all die on next tick.
+		}
+	}
+
+	private void tick () {
 		init();
 		if (this.up.get()) {
 			if (readInput() || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
