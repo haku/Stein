@@ -120,12 +120,12 @@ public abstract class SshConsole implements Runnable {
 			this.screen.refresh();
 		}
 		this.screen.clear();
-		writeScreen(this.screenWriter);
+		writeScreen(this.screen, this.screenWriter);
 		this.screen.refresh();
 	}
 
 	protected abstract boolean readInput (Key k);
 
-	protected abstract void writeScreen (ScreenWriter writer);
+	protected abstract void writeScreen (Screen scr, ScreenWriter w);
 
 }
