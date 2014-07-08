@@ -20,7 +20,7 @@ import com.googlecode.lanterna.terminal.Terminal;
 public abstract class SshConsole implements Runnable {
 
 	private static final long POLL_CYCLE = 200L;
-	private static final long PRINT_CYCLE = 1000L;
+	private static final long PRINT_CYCLE = 500L;
 	private static final long SHUTDOWN_TIMEOUT = 5000L;
 
 	private static final Logger LOG = LoggerFactory.getLogger(SshConsole.class);
@@ -39,7 +39,7 @@ public abstract class SshConsole implements Runnable {
 	private boolean inited = false;
 	private long lastPrint = 0L;
 
-	public SshConsole (String name, Environment env, Terminal terminal, ExitCallback callback) {
+	public SshConsole (final String name, final Environment env, final Terminal terminal, final ExitCallback callback) {
 		this.name = name;
 		this.env = env;
 		this.terminal = terminal;
@@ -48,7 +48,7 @@ public abstract class SshConsole implements Runnable {
 		this.screenWriter = new ScreenWriter(this.screen);
 	}
 
-	public void schedule (ScheduledExecutorService schEx) {
+	public void schedule (final ScheduledExecutorService schEx) {
 		if (this.schFuture != null) throw new IllegalStateException("Already scheduled: " + this.schFuture);
 		this.schFuture = schEx.scheduleWithFixedDelay(this, 0L, POLL_CYCLE, TimeUnit.MILLISECONDS);
 	}
