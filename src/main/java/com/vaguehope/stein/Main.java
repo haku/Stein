@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 
 public final class Main {
 
-	private static final int SSHD_PORT = 14022; // TODO make config.
+	private static final int SSHD_PORT = 15022; // TODO make config.
 	private static final String HOSTKEY_NAME = "hostkey.ser";
 	private static final long IDLE_TIMEOUT = 24 * 60 * 60 * 1000L; // A day.
 
@@ -23,7 +23,7 @@ public final class Main {
 		throw new AssertionError();
 	}
 
-	public static void main (String[] args) throws IOException, InterruptedException {
+	public static void main (final String[] args) throws IOException, InterruptedException {
 		SshServer sshd = SshServer.setUpDefaultServer();
 		sshd.setPort(SSHD_PORT);
 		sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(HOSTKEY_NAME));
@@ -41,7 +41,7 @@ public final class Main {
 		public TestPasswordAuthenticator () {}
 
 		@Override
-		public boolean authenticate (String username, String password, ServerSession session) {
+		public boolean authenticate (final String username, final String password, final ServerSession session) {
 			return username != null && username.equals(password); // FIXME dodge test auth.
 		}
 
