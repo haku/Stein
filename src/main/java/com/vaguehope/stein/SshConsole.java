@@ -1,5 +1,6 @@
 package com.vaguehope.stein;
 
+import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
@@ -11,10 +12,10 @@ import org.apache.sshd.server.ExitCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.googlecode.lanterna.TerminalFacade;
-import com.googlecode.lanterna.input.Key;
+import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.screen.DefaultScreen;
 import com.googlecode.lanterna.screen.Screen;
-import com.googlecode.lanterna.screen.ScreenWriter;
 import com.googlecode.lanterna.terminal.Terminal;
 
 public abstract class SshConsole implements Runnable {
@@ -31,7 +32,7 @@ public abstract class SshConsole implements Runnable {
 	private final ExitCallback callback;
 
 	private final Screen screen;
-	private final ScreenWriter screenWriter;
+	private final TextGraphics textGraphics;
 
 	private final AtomicBoolean up = new AtomicBoolean(true);
 	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
@@ -39,13 +40,13 @@ public abstract class SshConsole implements Runnable {
 	private boolean inited = false;
 	private long lastPrint = 0L;
 
-	public SshConsole (final String name, final Environment env, final Terminal terminal, final ExitCallback callback) {
+	public SshConsole (final String name, final Environment env, final Terminal terminal, final ExitCallback callback) throws IOException {
 		this.name = name;
 		this.env = env;
 		this.terminal = terminal;
 		this.callback = callback;
-		this.screen = TerminalFacade.createScreen(this.terminal);
-		this.screenWriter = new ScreenWriter(this.screen);
+		this.screen = new DefaultScreen(this.terminal);
+		this.textGraphics = this.screen.newTextGraphics();
 	}
 
 	public void schedule (final ScheduledExecutorService schEx) {
@@ -68,7 +69,7 @@ public abstract class SshConsole implements Runnable {
 		return this.env;
 	}
 
-	private void init () {
+	private void init () throws IOException {
 		if (!this.inited) {
 			this.inited = true; // Only try once.
 			this.screen.startScreen();
@@ -87,7 +88,7 @@ public abstract class SshConsole implements Runnable {
 		}
 	}
 
-	private void tick () {
+	private void tick () throws IOException {
 		init();
 		if (this.up.get()) {
 			if (readInput() || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
@@ -105,27 +106,25 @@ public abstract class SshConsole implements Runnable {
 		}
 	}
 
-	private boolean readInput () {
+	private boolean readInput () throws IOException {
 		boolean changed = false;
-		Key k;
+		KeyStroke k;
 		while ((k = this.terminal.readInput()) != null) {
 			changed = readInput(k);
 		}
 		return changed;
 	}
 
-	private void printScreen () {
-		if (this.screen.resizePending()) {
-			this.screenWriter.fillScreen(' ');
-			this.screen.refresh();
-		}
+	private void printScreen () throws IOException {
+		this.screen.doResizeIfNecessary();
+
 		this.screen.clear();
-		writeScreen(this.screen, this.screenWriter);
+		writeScreen(this.screen, this.textGraphics);
 		this.screen.refresh();
 	}
 
-	protected abstract boolean readInput (Key k);
+	protected abstract boolean readInput (KeyStroke k);
 
-	protected abstract void writeScreen (Screen scr, ScreenWriter w);
+	protected abstract void writeScreen (Screen scr, TextGraphics tg);
 
 }

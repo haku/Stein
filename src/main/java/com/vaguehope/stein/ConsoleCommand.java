@@ -14,11 +14,13 @@ import org.apache.sshd.server.SessionAware;
 import org.apache.sshd.server.Signal;
 import org.apache.sshd.server.SignalListener;
 import org.apache.sshd.server.session.ServerSession;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.terminal.Terminal;
-import com.googlecode.lanterna.terminal.TerminalSize;
-import com.googlecode.lanterna.terminal.text.UnixTerminal;
-import com.googlecode.lanterna.terminal.text.UnixTerminalSizeQuerier;
+import com.googlecode.lanterna.terminal.ansi.UnixTerminal;
+import com.googlecode.lanterna.terminal.ansi.UnixTerminalSizeQuerier;
 
 public class ConsoleCommand implements Command, SessionAware {
 
@@ -91,7 +93,9 @@ public class ConsoleCommand implements Command, SessionAware {
 
 	private static class SshTerminal extends UnixTerminal implements SignalListener {
 
-		public SshTerminal (final InputStream terminalInput, final OutputStream terminalOutput, final Charset terminalCharset, final Environment env) {
+		private static final Logger LOG = LoggerFactory.getLogger(ConsoleCommand.SshTerminal.class);
+
+		public SshTerminal (final InputStream terminalInput, final OutputStream terminalOutput, final Charset terminalCharset, final Environment env) throws IOException {
 			super(terminalInput, terminalOutput, terminalCharset, new SshTerminalSizeQuerier(env));
 			env.addSignalListener(this, Signal.WINCH);
 		}
@@ -100,15 +104,22 @@ public class ConsoleCommand implements Command, SessionAware {
 		public void signal (final Signal signal) {
 			switch (signal) {
 				case WINCH:
-					notifyResized(getTerminalSize());
+					notifyResized();
 					break;
 				default:
 			}
 		}
 
-		public void notifyResized (final TerminalSize size) {
-			onResized(size.getColumns(), size.getRows());
+		public void notifyResized () {
+			try {
+				final TerminalSize size = getTerminalSize();
+				onResized(size.getColumns(), size.getRows());
+			}
+			catch (final IOException e) {
+				LOG.warn("Failed to read terminal size after being notified of a resize.", e);
+			}
 		}
+
 	}
 
 }
