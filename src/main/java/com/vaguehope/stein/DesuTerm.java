@@ -1,6 +1,7 @@
 package com.vaguehope.stein;
 
 import java.io.IOException;
+import java.util.Map.Entry;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.server.Environment;
@@ -36,11 +37,15 @@ public class DesuTerm extends SshConsole {
 
 	@Override
 	protected void writeScreen (final Screen scr, final TextGraphics tg) {
-		tg.putString(0, 0, "" + (System.currentTimeMillis() / 1000L)); // NOSONAR not a magic number.
-		tg.putString(1, 2, "Hello desu~", SGR.BOLD);
-		tg.putString(1, 3, "size: " + scr.getTerminalSize()); // NOSONAR not a magic number.
-		tg.putString(1, 4, "env: " + getEnv().getEnv()); // NOSONAR not a magic number.
-		tg.putString(1, 5, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
+		int i = 0;
+		tg.putString(0, i++, "" + (System.currentTimeMillis() / 1000L)); // NOSONAR not a magic number.
+		i++;
+		tg.putString(1, i++, "Hello desu~", SGR.BOLD);
+		tg.putString(1, i++, "size: " + scr.getTerminalSize()); // NOSONAR not a magic number.
+		tg.putString(1, i++, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
+		for (final Entry<String, String> e : getEnv().getEnv().entrySet()) {
+			tg.putString(1, i++, String.format("env: %s=%s", e.getKey(), e.getValue()));
+		}
 	}
 
 }
