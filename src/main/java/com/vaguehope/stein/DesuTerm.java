@@ -38,8 +38,18 @@ public class DesuTerm extends SshConsole {
 	@Override
 	protected void writeScreen (final Screen scr, final TextGraphics tg) {
 		int i = 0;
-		tg.putString(0, i++, "" + (System.currentTimeMillis() / 1000L)); // NOSONAR not a magic number.
+		final long utime = System.currentTimeMillis() / 1000L;
+		tg.putString(0, i++, "" + utime); // NOSONAR not a magic number.
 		i++;
+
+		if (utime % 2 == 0) {
+			tg.putString(1, i++, "こねちわ　～ abc");
+		}
+		else {
+			tg.putString(1, i++, "       abc");
+		}
+		tg.putString(30, i - 1, "123");
+
 		tg.putString(1, i++, "Hello desu~", SGR.BOLD);
 		tg.putString(1, i++, "size: " + scr.getTerminalSize()); // NOSONAR not a magic number.
 		tg.putString(1, i++, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
