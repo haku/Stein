@@ -39,7 +39,7 @@ public class DesuTerm extends SshConsole {
 	protected void writeScreen (final Screen scr, final TextGraphics tg) {
 		int i = 0;
 		final long utime = System.currentTimeMillis() / 1000L;
-		tg.putString(0, i++, "" + utime); // NOSONAR not a magic number.
+		tg.putString(0, i++, "" + utime);
 		i++;
 
 		if (utime % 2 == 0) {
@@ -51,8 +51,8 @@ public class DesuTerm extends SshConsole {
 		tg.putString(30, i - 1, "123");
 
 		tg.putString(1, i++, "Hello desu~", SGR.BOLD);
-		tg.putString(1, i++, "size: " + scr.getTerminalSize()); // NOSONAR not a magic number.
-		tg.putString(1, i++, "debug: " + this.inputCounter.get()); // NOSONAR not a magic number.
+		tg.putString(1, i++, "size: " + scr.getTerminalSize());
+		tg.putString(1, i++, "debug: " + this.inputCounter.get());
 		for (final Entry<String, String> e : getEnv().getEnv().entrySet()) {
 			tg.putString(1, i++, String.format("env: %s=%s", e.getKey(), e.getValue()));
 		}
