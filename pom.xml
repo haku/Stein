@@ -9,7 +9,7 @@
 	<properties>
 		<java.version>1.6</java.version>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-		<lanterna.version>3.0.0-alpha3</lanterna.version>
+		<lanterna.version>3.0.0-alpha4</lanterna.version>
 		<sshd.version>0.11.0</sshd.version>
 		<logback.version>1.1.2</logback.version>
 		<slf4j.version>1.7.7</slf4j.version>

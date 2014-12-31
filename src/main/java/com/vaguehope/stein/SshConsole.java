@@ -14,8 +14,8 @@ import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.graphics.TextGraphics;
 import com.googlecode.lanterna.input.KeyStroke;
-import com.googlecode.lanterna.screen.DefaultScreen;
 import com.googlecode.lanterna.screen.Screen;
+import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.Terminal;
 
 public abstract class SshConsole implements Runnable {
@@ -45,7 +45,7 @@ public abstract class SshConsole implements Runnable {
 		this.env = env;
 		this.terminal = terminal;
 		this.callback = callback;
-		this.screen = new DefaultScreen(this.terminal);
+		this.screen = new TerminalScreen(terminal);
 		this.textGraphics = this.screen.newTextGraphics();
 	}
 
@@ -109,7 +109,7 @@ public abstract class SshConsole implements Runnable {
 	private boolean readInput () throws IOException {
 		boolean changed = false;
 		KeyStroke k;
-		while ((k = this.terminal.readInput()) != null) {
+		while ((k = this.terminal.pollInput()) != null) {
 			changed = readInput(k);
 		}
 		return changed;
