@@ -1,5 +1,6 @@
 package com.vaguehope.stein;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 
@@ -15,6 +16,9 @@ public final class Main {
 
 	private static final int SSHD_PORT = 15022; // TODO make config.
 	private static final String HOSTKEY_NAME = "hostkey.ser";
+	private static final String HOSTKEY_TYPE = "RSA";
+	private static final int HOSTKEY_LENGTH = 1024;
+
 	private static final long IDLE_TIMEOUT = 24 * 60 * 60 * 1000L; // A day.
 
 	private static final Logger LOG = LoggerFactory.getLogger(Main.class);
@@ -26,7 +30,10 @@ public final class Main {
 	public static void main (final String[] args) throws IOException, InterruptedException {
 		SshServer sshd = SshServer.setUpDefaultServer();
 		sshd.setPort(SSHD_PORT);
-		sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(HOSTKEY_NAME));
+
+		final File hostKey = new File(new File("."), HOSTKEY_NAME);
+		sshd.setKeyPairProvider(new SimpleGeneratorHostKeyProvider(hostKey.getAbsolutePath(), HOSTKEY_TYPE, HOSTKEY_LENGTH));
+
 		sshd.setPasswordAuthenticator(new TestPasswordAuthenticator());
 		sshd.setShellFactory(new ConsoleCommandFactory());
 		sshd.getProperties().put(ServerFactoryManager.IDLE_TIMEOUT, String.valueOf(IDLE_TIMEOUT));
