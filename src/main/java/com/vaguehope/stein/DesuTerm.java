@@ -11,9 +11,16 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.SGR;
+import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TerminalTextUtils;
+import com.googlecode.lanterna.TextColor;
+import com.googlecode.lanterna.graphics.SimpleTheme;
 import com.googlecode.lanterna.graphics.TextGraphics;
+import com.googlecode.lanterna.gui2.AbstractComponent;
+import com.googlecode.lanterna.gui2.ComponentRenderer;
+import com.googlecode.lanterna.gui2.DefaultWindowManager;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
+import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import com.googlecode.lanterna.gui2.WindowBasedTextGUI;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialog;
 import com.googlecode.lanterna.gui2.dialogs.MessageDialogButton;
@@ -36,7 +43,36 @@ public class DesuTerm extends SshConsole {
 	@Override
 	protected void initScreen (final Screen scr) {
 		scr.setCursorPosition(null);
-		this.gui = new MultiWindowTextGUI(scr);
+		this.gui = new MultiWindowTextGUI(scr,  new DefaultWindowManager(), new SelfBackground(scr));
+		this.gui.setTheme(new SimpleTheme(TextColor.ANSI.DEFAULT, TextColor.ANSI.DEFAULT));
+	}
+
+	private class SelfBackground extends AbstractComponent<SelfBackground> {
+
+		private final Screen scr;
+
+		public SelfBackground (final Screen scr) {
+			this.scr = scr;
+		}
+
+		@Override
+		protected ComponentRenderer<SelfBackground> createDefaultRenderer () {
+			return new ComponentRenderer<SelfBackground>() {
+
+				@Override
+				public TerminalSize getPreferredSize (final SelfBackground component) {
+					return SelfBackground.this.scr.getTerminalSize();
+				}
+
+				@Override
+				public void drawComponent (final TextGUIGraphics graphics, final SelfBackground component) {
+					graphics.fill(' ');
+					writeScreen(SelfBackground.this.scr, graphics);
+				}
+
+			};
+		}
+
 	}
 
 	@Override
