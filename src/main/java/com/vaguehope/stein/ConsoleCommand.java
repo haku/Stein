@@ -4,6 +4,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -18,6 +22,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.input.BasicCharacterPattern;
+import com.googlecode.lanterna.input.CharacterPattern;
+import com.googlecode.lanterna.input.KeyDecodingProfile;
+import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.ansi.UnixTerminal;
 import com.googlecode.lanterna.terminal.ansi.UnixTerminalSizeQuerier;
@@ -97,6 +106,7 @@ public class ConsoleCommand implements Command, SessionAware {
 
 		public SshTerminal (final InputStream terminalInput, final OutputStream terminalOutput, final Charset terminalCharset, final Environment env) throws IOException {
 			super(terminalInput, terminalOutput, terminalCharset, new SshTerminalSizeQuerier(env));
+			getInputDecoder().addProfile(new SshInputMapping());
 			env.addSignalListener(this, Signal.WINCH);
 		}
 
@@ -118,6 +128,21 @@ public class ConsoleCommand implements Command, SessionAware {
 			catch (final IOException e) {
 				LOG.warn("Failed to read terminal size after being notified of a resize.", e);
 			}
+		}
+
+	}
+
+	private static class SshInputMapping implements KeyDecodingProfile {
+
+		private static final List<CharacterPattern> PATTERNS = new ArrayList<CharacterPattern>(
+				Arrays.asList(
+						new CharacterPattern[] {
+								new BasicCharacterPattern(new KeyStroke(KeyType.Enter), '\r')
+						}));
+
+		@Override
+		public Collection<CharacterPattern> getPatterns () {
+			return PATTERNS;
 		}
 
 	}
