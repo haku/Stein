@@ -2,8 +2,6 @@ package com.vaguehope.stein;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -20,7 +18,6 @@ import com.googlecode.lanterna.terminal.Terminal;
 
 public abstract class SshConsole implements Runnable {
 
-	private static final long POLL_CYCLE = 200L;
 	private static final long PRINT_CYCLE = 500L;
 	private static final long SHUTDOWN_TIMEOUT = 5000L;
 
@@ -36,7 +33,6 @@ public abstract class SshConsole implements Runnable {
 
 	private final AtomicBoolean up = new AtomicBoolean(true);
 	private final CountDownLatch shutdownLatch = new CountDownLatch(1);
-	private ScheduledFuture<?> schFuture;
 	private boolean inited = false;
 	private long lastPrint = 0L;
 
@@ -49,11 +45,6 @@ public abstract class SshConsole implements Runnable {
 		this.textGraphics = this.screen.newTextGraphics();
 	}
 
-	public void schedule (final ScheduledExecutorService schEx) {
-		if (this.schFuture != null) throw new IllegalStateException("Already scheduled: " + this.schFuture);
-		this.schFuture = schEx.scheduleWithFixedDelay(this, 0L, POLL_CYCLE, TimeUnit.MILLISECONDS);
-	}
-
 	public void stopAndJoin () {
 		if (this.up.compareAndSet(true, false)) {
 			LOG.info("Killing session {}...", this.name);
@@ -61,7 +52,8 @@ public abstract class SshConsole implements Runnable {
 		}
 	}
 
-	protected void scheduleQuit () {
+	protected void scheduleQuit (final String reason) {
+		if (this.up.get()) LOG.info("Killing session {}: {} ...", this.name, reason);
 		this.up.set(false);
 	}
 
@@ -72,6 +64,7 @@ public abstract class SshConsole implements Runnable {
 	private void init () throws IOException {
 		if (!this.inited) {
 			this.inited = true; // Only try once.
+			initScreen(this.screen);
 			this.screen.startScreen();
 			LOG.info("Session created: {}", this.name);
 		}
@@ -80,37 +73,44 @@ public abstract class SshConsole implements Runnable {
 	@Override
 	public void run () {
 		try {
-			tick();
-		}
-		catch (final Throwable t) {
-			LOG.error("Session error.", t);
-			scheduleQuit(); // Should all die on next tick.
-		}
-	}
-
-	private void tick () throws IOException {
-		init();
-		if (this.up.get()) {
-			if (readInput() || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
-				printScreen();
-				this.lastPrint = System.currentTimeMillis();
+			init();
+			while (this.up.get()) {
+				tick();
+				Thread.sleep(10); // FIXME I wish terminal.readInput() used blocking-with-timeout IO.
 			}
 		}
-		else {
-			this.schFuture.cancel(false);
-			this.screen.stopScreen();
-			this.terminal.flush(); // Workaround as stopScreen() does not trigger flush().
-			this.callback.onExit(0, "baibai!");
-			LOG.info("Session destroyed: {}", this.name);
-			this.shutdownLatch.countDown();
+		catch (final Throwable t) { // NOSONAR Report all errors and clean up session.
+			LOG.error("Session error.", t);
+			scheduleQuit("session error");
+		}
+		finally {
+			try {
+				this.screen.stopScreen();
+				this.terminal.flush(); // Workaround as stopScreen() does not trigger flush().
+			}
+			catch (IOException e) {
+				LOG.error("Shutdown error.", e);
+			}
+			finally {
+				this.callback.onExit(0, "baibai!");
+				LOG.info("Session destroyed: {}", this.name);
+				this.shutdownLatch.countDown();
+			}
 		}
 	}
 
-	private boolean readInput () throws IOException {
+	private void tick () throws IOException, InterruptedException {
+		if (readInput() || System.currentTimeMillis() - this.lastPrint > PRINT_CYCLE) {
+			printScreen();
+			this.lastPrint = System.currentTimeMillis();
+		}
+	}
+
+	private boolean readInput () throws IOException, InterruptedException {
 		boolean changed = false;
 		KeyStroke k;
 		while ((k = this.terminal.pollInput()) != null) {
-			changed = readInput(k);
+			changed = readInput(k, this.up) || changed;
 		}
 		return changed;
 	}
@@ -123,7 +123,9 @@ public abstract class SshConsole implements Runnable {
 		this.screen.refresh();
 	}
 
-	protected abstract boolean readInput (KeyStroke k);
+	protected abstract boolean readInput (KeyStroke k, AtomicBoolean alive) throws InterruptedException;
+
+	protected abstract void initScreen (Screen scr);
 
 	protected abstract void writeScreen (Screen scr, TextGraphics tg);
 

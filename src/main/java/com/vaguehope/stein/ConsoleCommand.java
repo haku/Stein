@@ -4,7 +4,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.Charset;
-import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.sshd.server.Command;
@@ -26,7 +26,7 @@ public class ConsoleCommand implements Command, SessionAware {
 
 	private static final AtomicInteger COUNTER = new AtomicInteger(0);
 
-	private final ScheduledExecutorService schEx;
+	private final ExecutorService es;
 
 	private InputStream in;
 	private OutputStream out;
@@ -34,8 +34,8 @@ public class ConsoleCommand implements Command, SessionAware {
 
 	private volatile DesuTerm term = null;
 
-	public ConsoleCommand (final ScheduledExecutorService schEx) {
-		this.schEx = schEx;
+	public ConsoleCommand (final ExecutorService es) {
+		this.es = es;
 	}
 
 	@Override
@@ -63,7 +63,7 @@ public class ConsoleCommand implements Command, SessionAware {
 	public void start (final Environment env) throws IOException {
 		final Terminal terminal = new SshTerminal(this.in, this.out, Charset.forName("UTF8"), env);
 		this.term = new DesuTerm("desuTerm" + COUNTER.getAndIncrement(), env, terminal, this.callback);
-		this.term.schedule(this.schEx);
+		this.es.submit(this.term);
 	}
 
 	@Override
